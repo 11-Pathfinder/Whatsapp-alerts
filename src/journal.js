@@ -1,43 +1,58 @@
-const Database = require("better-sqlite3");
-const path = require("path");
+const { Pool } = require("pg");
 
-const DB_PATH = path.join(__dirname, "..", "journal.db");
-let db;
+let pool;
 
-function init() {
-  db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
-  db.exec(`
+async function init() {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL?.includes("localhost")
+      ? false
+      : { rejectUnauthorized: false },
+  });
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS journal_entries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       phone_number TEXT NOT NULL,
       message_text TEXT NOT NULL,
-      received_at TEXT NOT NULL DEFAULT (datetime('now')),
-      date TEXT NOT NULL DEFAULT (date('now'))
+      received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      date DATE NOT NULL DEFAULT CURRENT_DATE
     )
   `);
-  console.log("Journal database initialized.");
+  console.log("Journal database initialized (Postgres).");
 }
 
-function saveEntry(phoneNumber, messageText) {
-  const stmt = db.prepare(
-    "INSERT INTO journal_entries (phone_number, message_text) VALUES (?, ?)"
+async function saveEntry(phoneNumber, messageText) {
+  const result = await pool.query(
+    "INSERT INTO journal_entries (phone_number, message_text) VALUES ($1, $2) RETURNING id",
+    [phoneNumber, messageText]
   );
-  const result = stmt.run(phoneNumber, messageText);
-  console.log(`Journal entry saved (id: ${result.lastInsertRowid})`);
-  return result.lastInsertRowid;
+  const id = result.rows[0].id;
+  console.log(`Journal entry saved (id: ${id})`);
+  return id;
 }
 
-function getEntriesByDate(date) {
-  return db
-    .prepare("SELECT * FROM journal_entries WHERE date = ? ORDER BY received_at")
-    .all(date);
+async function getEntriesByDate(date) {
+  const result = await pool.query(
+    "SELECT * FROM journal_entries WHERE date = $1 ORDER BY received_at",
+    [date]
+  );
+  return result.rows;
 }
 
-function getRecentEntries(limit = 10) {
-  return db
-    .prepare("SELECT * FROM journal_entries ORDER BY received_at DESC LIMIT ?")
-    .all(limit);
+async function getRecentEntries(limit = 10) {
+  const result = await pool.query(
+    "SELECT * FROM journal_entries ORDER BY received_at DESC LIMIT $1",
+    [limit]
+  );
+  return result.rows;
 }
 
-module.exports = { init, saveEntry, getEntriesByDate, getRecentEntries };
+async function getAllEntriesGroupedByDate() {
+  const result = await pool.query(
+    "SELECT * FROM journal_entries ORDER BY date DESC, received_at ASC"
+  );
+  return result.rows;
+}
+
+module.exports = { init, saveEntry, getEntriesByDate, getRecentEntries, getAllEntriesGroupedByDate };

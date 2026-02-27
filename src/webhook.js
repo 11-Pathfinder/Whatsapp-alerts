@@ -20,7 +20,7 @@ router.get("/webhook", (req, res) => {
 });
 
 // POST /webhook — Incoming messages from Meta
-router.post("/webhook", (req, res) => {
+router.post("/webhook", async (req, res) => {
   // Always respond 200 quickly — Meta will retry on timeouts
   res.sendStatus(200);
 
@@ -41,7 +41,7 @@ router.post("/webhook", (req, res) => {
       const text = message.text.body;
 
       console.log(`Received journal reply from ${phoneNumber}: "${text}"`);
-      journal.saveEntry(phoneNumber, text);
+      await journal.saveEntry(phoneNumber, text);
     }
   } catch (err) {
     console.error("Error processing webhook:", err);

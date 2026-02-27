@@ -7,6 +7,7 @@ const required = [
   "WHATSAPP_TEMPLATE_NAME",
   "RECIPIENT_PHONE_NUMBER",
   "WEBHOOK_VERIFY_TOKEN",
+  "DATABASE_URL",
 ];
 
 const missing = required.filter((key) => !process.env[key]);
