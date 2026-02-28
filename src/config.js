@@ -8,6 +8,7 @@ const required = [
   "RECIPIENT_PHONE_NUMBER",
   "WEBHOOK_VERIFY_TOKEN",
   "DATABASE_URL",
+  "WHATSAPP_APP_SECRET",
 ];
 
 const missing = required.filter((key) => !process.env[key]);
@@ -23,9 +24,11 @@ module.exports = {
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
     accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
     templateName: process.env.WHATSAPP_TEMPLATE_NAME,
+    appSecret: process.env.WHATSAPP_APP_SECRET,
   },
   recipientPhone: process.env.RECIPIENT_PHONE_NUMBER,
   webhookVerifyToken: process.env.WEBHOOK_VERIFY_TOKEN,
+  journalAuthToken: process.env.JOURNAL_AUTH_TOKEN || null,
   port: parseInt(process.env.PORT, 10) || 3000,
   journalPromptTimes: (process.env.JOURNAL_PROMPT_TIMES || "09:00,21:00")
     .split(",")

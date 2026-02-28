@@ -2,12 +2,21 @@ const { Pool } = require("pg");
 
 let pool;
 
+function getSslConfig() {
+  const dbUrl = process.env.DATABASE_URL || "";
+  if (dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1")) {
+    return false;
+  }
+  if (process.env.DATABASE_CA_CERT) {
+    return { rejectUnauthorized: true, ca: process.env.DATABASE_CA_CERT };
+  }
+  return { rejectUnauthorized: true };
+}
+
 async function init() {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes("localhost")
-      ? false
-      : { rejectUnauthorized: false },
+    ssl: getSslConfig(),
   });
 
   await pool.query(`

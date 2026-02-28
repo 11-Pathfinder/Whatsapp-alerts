@@ -1,4 +1,5 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const config = require("./config");
 const journal = require("./journal");
 const webhookRouter = require("./webhook");
@@ -10,7 +11,13 @@ async function main() {
 
   // Set up Express server
   const app = express();
-  app.use(express.json());
+  app.use(express.json({
+    verify: (req, _res, buf) => { req.rawBody = buf; },
+  }));
+
+  // Rate limiting — 100 requests per 15 minutes per IP
+  app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
+
   app.use(webhookRouter);
 
   // Health check
@@ -18,8 +25,18 @@ async function main() {
     res.json({ status: "ok", service: "whatsapp-journal-reminders" });
   });
 
-  // Journal webpage
-  app.get("/journal", async (_req, res) => {
+  // Journal webpage (protected by token auth)
+  app.get("/journal", (req, res, next) => {
+    const token = config.journalAuthToken;
+    if (!token) {
+      return res.status(503).send("Journal auth token not configured.");
+    }
+    const provided = req.query.token || req.headers["x-auth-token"];
+    if (provided !== token) {
+      return res.status(401).send("Unauthorized.");
+    }
+    next();
+  }, async (_req, res) => {
     try {
       const entries = await journal.getAllEntriesGroupedByDate();
 
