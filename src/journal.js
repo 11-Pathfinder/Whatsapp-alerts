@@ -10,7 +10,7 @@ function getSslConfig() {
   if (process.env.DATABASE_CA_CERT) {
     return { rejectUnauthorized: true, ca: process.env.DATABASE_CA_CERT };
   }
-  return { rejectUnauthorized: true };
+  return { rejectUnauthorized: false };
 }
 
 async function init() {
