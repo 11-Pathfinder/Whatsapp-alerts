@@ -7,6 +7,11 @@ const router = express.Router();
 
 // Verify Meta webhook signature (HMAC-SHA256 with App Secret)
 function verifySignature(req, res, next) {
+  if (!config.whatsapp.appSecret) {
+    console.warn("WHATSAPP_APP_SECRET not set — skipping signature verification.");
+    return next();
+  }
+
   const signature = req.headers["x-hub-signature-256"];
   if (!signature) {
     console.warn("Webhook rejected — missing x-hub-signature-256 header.");

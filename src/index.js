@@ -25,11 +25,12 @@ async function main() {
     res.json({ status: "ok", service: "whatsapp-journal-reminders" });
   });
 
-  // Journal webpage (protected by token auth)
+  // Journal webpage (protected by token auth when configured)
   app.get("/journal", (req, res, next) => {
     const token = config.journalAuthToken;
     if (!token) {
-      return res.status(503).send("Journal auth token not configured.");
+      console.warn("JOURNAL_AUTH_TOKEN not set — serving journal without auth.");
+      return next();
     }
     const provided = req.query.token || req.headers["x-auth-token"];
     if (provided !== token) {

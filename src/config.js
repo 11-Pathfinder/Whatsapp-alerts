@@ -8,8 +8,14 @@ const required = [
   "RECIPIENT_PHONE_NUMBER",
   "WEBHOOK_VERIFY_TOKEN",
   "DATABASE_URL",
-  "WHATSAPP_APP_SECRET",
 ];
+
+const recommended = ["WHATSAPP_APP_SECRET", "JOURNAL_AUTH_TOKEN"];
+const missingRecommended = recommended.filter((key) => !process.env[key]);
+if (missingRecommended.length > 0) {
+  console.warn(`WARNING: Missing recommended env vars: ${missingRecommended.join(", ")}`);
+  console.warn("Webhook signature verification and journal auth will be disabled.");
+}
 
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length > 0) {
