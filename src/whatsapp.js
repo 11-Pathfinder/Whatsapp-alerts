@@ -9,7 +9,7 @@ async function sendTemplateMessage() {
     type: "template",
     template: {
       name: config.whatsapp.templateName,
-      language: { code: "en_US" },
+      language: { code: "en" },
     },
   };
 
