@@ -191,6 +191,27 @@ async function main() {
       font-size: 0.8rem;
       color: #888;
     }
+    .add-rating {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #e8e6e1;
+    }
+    .add-rating h2 {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .add-rating input[type="date"] {
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 0.2rem 0.4rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+    }
     .chart-section {
       margin-bottom: 2rem;
     }
@@ -288,6 +309,18 @@ async function main() {
     <a href="/journal?token=${encodeURIComponent(token)}">Clear</a>
   </form>
 
+  <div class="add-rating">
+    <h2>Add Rating</h2>
+    <div class="ratings-row" id="add-rating-row">
+      <label>Date <input type="date" name="date" value="${new Date().toISOString().split("T")[0]}"></label>
+      <label>O <input type="number" name="ovo" min="1" max="10"></label>
+      <label>P <input type="number" name="pathfinder" min="1" max="10"></label>
+      <label>H <input type="number" name="health" min="1" max="10"></label>
+      <button onclick="saveRating(this)">Save</button>
+      <span class="rating-status"></span>
+    </div>
+  </div>
+
   ${chartHtml}
 
   ${entriesHtml}
@@ -295,7 +328,8 @@ async function main() {
   <script>
     async function saveRating(btn) {
       var row = btn.closest('.ratings-row');
-      var date = row.dataset.date;
+      var dateInput = row.querySelector('[name=date]');
+      var date = dateInput ? dateInput.value : row.dataset.date;
       var body = {
         date: date,
         ovo: parseInt(row.querySelector('[name=ovo]').value) || null,
