@@ -33,4 +33,32 @@ async function sendTemplateMessage() {
   return data;
 }
 
-module.exports = { sendTemplateMessage };
+async function sendTextMessage(to, body) {
+  const payload = {
+    messaging_product: "whatsapp",
+    to,
+    type: "text",
+    text: { body },
+  };
+
+  const res = await fetch(BASE_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.whatsapp.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    console.error("Failed to send text message:", data);
+    return null;
+  }
+
+  console.log(`Text message sent to ${to} at ${new Date().toISOString()}`);
+  return data;
+}
+
+module.exports = { sendTemplateMessage, sendTextMessage };

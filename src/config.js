@@ -34,4 +34,5 @@ module.exports = {
   journalPromptTimes: (process.env.JOURNAL_PROMPT_TIMES || "09:00,21:00")
     .split(",")
     .map((t) => t.trim()),
+  ratingPromptTime: process.env.RATING_PROMPT_TIME || "21:30",
 };

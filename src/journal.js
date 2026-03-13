@@ -28,6 +28,19 @@ async function init() {
       date DATE NOT NULL DEFAULT CURRENT_DATE
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS daily_ratings (
+      id SERIAL PRIMARY KEY,
+      phone_number TEXT NOT NULL,
+      date DATE NOT NULL DEFAULT CURRENT_DATE,
+      ovo INTEGER CHECK (ovo BETWEEN 1 AND 10),
+      pathfinder INTEGER CHECK (pathfinder BETWEEN 1 AND 10),
+      health INTEGER CHECK (health BETWEEN 1 AND 10),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (phone_number, date)
+    )
+  `);
   console.log("Journal database initialized (Postgres).");
 }
 
@@ -57,11 +70,56 @@ async function getRecentEntries(limit = 10) {
   return result.rows;
 }
 
-async function getAllEntriesGroupedByDate() {
+async function getAllEntriesGroupedByDate(fromDate, toDate) {
+  if (fromDate && toDate) {
+    const result = await pool.query(
+      "SELECT * FROM journal_entries WHERE date BETWEEN $1 AND $2 ORDER BY date DESC, received_at ASC",
+      [fromDate, toDate]
+    );
+    return result.rows;
+  }
   const result = await pool.query(
     "SELECT * FROM journal_entries ORDER BY date DESC, received_at ASC"
   );
   return result.rows;
 }
 
-module.exports = { init, saveEntry, getEntriesByDate, getRecentEntries, getAllEntriesGroupedByDate };
+async function saveRatings(phoneNumber, date, { ovo, pathfinder, health }) {
+  const result = await pool.query(
+    `INSERT INTO daily_ratings (phone_number, date, ovo, pathfinder, health)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (phone_number, date) DO UPDATE SET
+       ovo = COALESCE($3, daily_ratings.ovo),
+       pathfinder = COALESCE($4, daily_ratings.pathfinder),
+       health = COALESCE($5, daily_ratings.health),
+       updated_at = NOW()
+     RETURNING *`,
+    [phoneNumber, date, ovo || null, pathfinder || null, health || null]
+  );
+  console.log(`Ratings saved for ${date}`);
+  return result.rows[0];
+}
+
+async function getRatings(fromDate, toDate) {
+  if (fromDate && toDate) {
+    const result = await pool.query(
+      "SELECT * FROM daily_ratings WHERE date BETWEEN $1 AND $2 ORDER BY date ASC",
+      [fromDate, toDate]
+    );
+    return result.rows;
+  }
+  const result = await pool.query(
+    "SELECT * FROM daily_ratings ORDER BY date ASC"
+  );
+  return result.rows;
+}
+
+async function getRatingsForDate(date) {
+  const result = await pool.query(
+    "SELECT * FROM daily_ratings WHERE date = $1",
+    [date]
+  );
+  return result.rows[0] || null;
+}
+
+module.exports = { init, saveEntry, getEntriesByDate, getRecentEntries, getAllEntriesGroupedByDate, saveRatings, getRatings, getRatingsForDate };

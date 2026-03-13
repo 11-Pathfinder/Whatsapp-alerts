@@ -5,6 +5,37 @@ const journal = require("./journal");
 
 const router = express.Router();
 
+function parseRatings(text) {
+  const trimmed = text.trim();
+  const oMatch = trimmed.match(/\bO\s*:\s*(\d{1,2})\b/i);
+  const pMatch = trimmed.match(/\bP\s*:\s*(\d{1,2})\b/i);
+  const hMatch = trimmed.match(/\bH\s*:\s*(\d{1,2})\b/i);
+
+  if (!oMatch && !pMatch && !hMatch) return null;
+
+  // If there's non-rating text, treat as a journal entry
+  const stripped = trimmed
+    .replace(/\b[OPH]\s*:\s*\d{1,2}\b/gi, "")
+    .replace(/[,\s]+/g, "")
+    .trim();
+  if (stripped.length > 0) return null;
+
+  const validate = (match) => {
+    if (!match) return null;
+    const val = parseInt(match[1], 10);
+    return val >= 1 && val <= 10 ? val : null;
+  };
+
+  const ratings = {
+    ovo: oMatch ? validate(oMatch) : null,
+    pathfinder: pMatch ? validate(pMatch) : null,
+    health: hMatch ? validate(hMatch) : null,
+  };
+
+  if (Object.values(ratings).every((v) => v === null)) return null;
+  return ratings;
+}
+
 // Verify Meta webhook signature (HMAC-SHA256 with App Secret)
 function verifySignature(req, res, next) {
   const signature = req.headers["x-hub-signature-256"];
@@ -64,6 +95,15 @@ router.post("/webhook", verifySignature, async (req, res) => {
       const text = message.text.body;
 
       console.log(`Received journal reply from ${phoneNumber}: "${text}"`);
+
+      const ratings = parseRatings(text);
+      if (ratings) {
+        const today = new Date().toISOString().split("T")[0];
+        await journal.saveRatings(phoneNumber, today, ratings);
+        console.log(`Ratings saved for ${phoneNumber}: ${JSON.stringify(ratings)}`);
+        continue;
+      }
+
       await journal.saveEntry(phoneNumber, text);
     }
   } catch (err) {

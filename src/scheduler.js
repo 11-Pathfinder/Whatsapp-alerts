@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const config = require("./config");
-const { sendTemplateMessage } = require("./whatsapp");
+const { sendTemplateMessage, sendTextMessage } = require("./whatsapp");
 
 function start() {
   for (const time of config.journalPromptTimes) {
@@ -22,6 +22,25 @@ function start() {
     });
 
     console.log(`Scheduled journal prompt at ${time} (cron: ${expression})`);
+  }
+
+  // Schedule daily rating prompt
+  const [rHour, rMinute] = config.ratingPromptTime.split(":");
+  const ratingCron = `${rMinute} ${rHour} * * *`;
+
+  if (cron.validate(ratingCron)) {
+    cron.schedule(ratingCron, async () => {
+      console.log("Sending daily rating prompt...");
+      try {
+        await sendTextMessage(
+          config.recipientPhone,
+          "How was your day? Rate 1-10:\nO:_ P:_ H:_\n(OVO / Pathfinder / Health)"
+        );
+      } catch (err) {
+        console.error("Failed to send rating prompt:", err);
+      }
+    });
+    console.log(`Scheduled rating prompt at ${config.ratingPromptTime} (cron: ${ratingCron})`);
   }
 }
 
