@@ -122,4 +122,17 @@ async function getRatingsForDate(date) {
   return result.rows[0] || null;
 }
 
-module.exports = { init, saveEntry, getEntriesByDate, getRecentEntries, getAllEntriesGroupedByDate, saveRatings, getRatings, getRatingsForDate };
+async function getWeeklyAverages(weekStartDate) {
+  const result = await pool.query(
+    `SELECT AVG(ovo)::numeric(3,1) as avg_ovo,
+            AVG(pathfinder)::numeric(3,1) as avg_pathfinder,
+            AVG(health)::numeric(3,1) as avg_health,
+            COUNT(*) as days_rated
+     FROM daily_ratings
+     WHERE date >= $1 AND date < $1::date + interval '7 days'`,
+    [weekStartDate]
+  );
+  return result.rows[0];
+}
+
+module.exports = { init, saveEntry, getEntriesByDate, getRecentEntries, getAllEntriesGroupedByDate, saveRatings, getRatings, getRatingsForDate, getWeeklyAverages };
